@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🇨🇦 Canadian Electricity Price Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #7f8c8d;
+            font-size: 1.2em;
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #7f8c8d;
+            font-size: 0.9em;
+            font-weight: 500;
+        }
+
+        .chart-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-title {
+            font-size: 1.5em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+            margin-bottom: 20px;
+        }
+
+        .province-table {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow-x: auto;
+        }
+
+        .table-title {
+            font-size: 1.5em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #667eea;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .rate-low { color: #27ae60; font-weight: bold; }
+        .rate-mid { color: #f39c12; font-weight: bold; }
+        .rate-high { color: #e74c3c; font-weight: bold; }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .control-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            font-weight: 500;
+        }
+
+        .control-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .control-btn.active {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%);
+        }
+
+        .info-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .info-title {
+            font-size: 1.5em;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .info-card h4 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .info-card p {
+            color: #7f8c8d;
+            font-size: 0.9em;
+        }
+
+        .info-card a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .info-card a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>🇨🇦 Canadian Electricity Price Dashboard</h1>
+            <p>Comprehensive analysis of electricity rates across all 13 Canadian provinces and territories</p>
+        </div>
+
+        <!-- Statistics Overview -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number">13</div>
+                <div class="stat-label">Provinces & Territories</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">$0.073</div>
+                <div class="stat-label">Lowest Rate (Quebec)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">$0.7494</div>
+                <div class="stat-label">Highest Rate (Nunavut)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">10.3x</div>
+                <div class="stat-label">Price Difference</div>
+            </div>
+        </div>
+
+        <!-- Price Comparison Chart -->
+        <div class="chart-section">
+            <h2 class="chart-title">Electricity Rates by Province/Territory</h2>
+            <div class="controls">
+                <button class="control-btn active" onclick="showChart('residential')">Residential</button>
+                <button class="control-btn" onclick="showChart('commercial')">Commercial</button>
+                <button class="control-btn" onclick="showChart('industrial')">Industrial</button>
+            </div>
+            <div class="chart-container">
+                <canvas id="priceChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Province Rankings Table -->
+        <div class="province-table">
+            <h2 class="table-title">Province Rankings & Current Rates</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Province/Territory</th>
+                        <th>Provider</th>
+                        <th>Residential Rate</th>
+                        <th>Commercial Rate</th>
+                        <th>Industrial Rate</th>
+                        <th>Market Type</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody id="provinceTableBody">
+                    <!-- Table data will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Market Structure Info -->
+        <div class="info-section">
+            <h2 class="info-title">Market Structure & Data Availability</h2>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>🔄 Deregulated Markets</h4>
+                    <p>Alberta operates a competitive retail market where consumers can choose their electricity provider. AESO manages the grid and provides real-time pricing data.</p>
+                </div>
+                <div class="info-card">
+                    <h4>⚖️ Regulated Markets</h4>
+                    <p>Most provinces have government-regulated rates through public utilities. Rates are reviewed annually and approved by regulatory bodies.</p>
+                </div>
+                <div class="info-card">
+                    <h4>🔀 Mixed Markets</h4>
+                    <p>Ontario combines regulated base rates with market components like HOEP (Hourly Ontario Energy Price) and Global Adjustment.</p>
+                </div>
+                <div class="info-card">
+                    <h4>📊 Data Availability</h4>
+                    <p>Real-time data available from Alberta (AESO) and Ontario (IESO). Most other provinces provide annual rate updates and web-based rate information.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Sources Section -->
+        <div class="info-section">
+            <h2 class="info-title">📚 Data Sources & References</h2>
+            <div class="info-grid">
+                <div class="info-card">
+                    <h4>🇦🇱 Alberta (AESO)</h4>
+                    <p>Source: AESO website<br>
+                    Rates: Residential $0.089/kWh, Business $0.094/kWh, Pool Price $45.23/MWh<br>
+                    Market: Deregulated with real-time pricing</p>
+                </div>
+                <div class="info-card">
+                    <h4>🇧🇨 British Columbia (BC Hydro)</h4>
+                    <p>Source: BC Hydro website<br>
+                    Rates: Residential $0.094/kWh, Business $0.25/kW (demand charge)<br>
+                    Market: Regulated with time-of-use options</p>
+                </div>
+                <div class="info-card">
+                    <h4>🇶🇨 Quebec (Hydro-Québec)</h4>
+                    <p>Source: Hydro-Québec website<br>
+                    Rates: Residential $0.073/kWh, Business $0.089/kWh<br>
+                    Market: Regulated - lowest rates in North America</p>
+                </div>
+                <div class="info-card">
+                    <h4>🇲🇦 Manitoba (Manitoba Hydro)</h4>
+                    <p>Source: Manitoba Hydro website<br>
+                    Rates: Residential $0.089/kWh, Business $0.094/kWh<br>
+                    Market: Regulated - primarily hydroelectric</p>
+                </div>
+                <div class="info-card">
+                    <h4>🇸🇰 Saskatchewan (SaskPower)</h4>
+                    <p>Source: SaskPower website<br>
+                    Rates: Residential $0.134/kWh, Business $0.139/kWh<br>
+                    Market: Regulated - coal + renewable mix</p>
+                </div>
+                <div class="info-card">
+                    <h4>🇳🇸 Nova Scotia (Nova Scotia Power)</h4>
+                    <p>Source: Nova Scotia Power website<br>
+                    Rates: Residential $0.154/kWh, Business $0.159/kWh<br>
+                    Market: Regulated - renewable options available</p>
+                </div>
+                <div class="info-card">
+                    <h4>🇳🇧 New Brunswick (NB Power)</h4>
+                    <p>Source: NB Power website<br>
+                    Rates: Residential $0.119/kWh, Business $0.124/kWh<br>
+                    Market: Regulated - time-of-use available</p>
+                </div>
+                <div class="info-card">
+                    <h4>🇳🇱 Newfoundland & Labrador (NL Hydro)</h4>
+                    <p>Source: NL Hydro website<br>
+                    Rates: Residential $0.134/kWh, Business $0.139/kWh<br>
+                    Market: Regulated - primarily hydroelectric</p>
+                </div>
+                <div class="info-card">
+                    <h4>🇵🇪 Prince Edward Island (Maritime Electric)</h4>
+                    <p>Source: Maritime Electric website<br>
+                    Rates: Residential $0.164/kWh, Business $0.169/kWh<br>
+                    Market: Regulated - wind integration</p>
+                </div>
+                <div class="info-card">
+                    <h4>🇳🇹 Northwest Territories (NT Power)</h4>
+                    <p>Source: <a href="https://www.ntpc.com/sites/default/files/2024-07/July%201%202024%20Rates.pdf" target="_blank">NTPC Rate Schedule July 1, 2024</a><br>
+                    Rates: Residential $0.262-$0.8186/kWh, Business $0.2071-$0.7016/kWh<br>
+                    Market: Regulated - rates vary by zone and system</p>
+                </div>
+                <div class="info-card">
+                    <h4>🇳🇺 Nunavut (Qulliq Energy)</h4>
+                    <p>Source: <a href="https://www.qec.nu.ca/customer-care/accounts-and-billing/customer-rates" target="_blank">QEC Customer Rates</a><br>
+                    Rates: Residential $0.7494/kWh, Business $0.6208/kWh<br>
+                    Market: Regulated - highest rates in Canada, 100% diesel generation</p>
+                </div>
+                <div class="info-card">
+                    <h4>🇾🇹 Yukon (Yukon Energy)</h4>
+                    <p>Source: <a href="https://yukonenergy.ca/customer-service/rates/rate-schedules/" target="_blank">Yukon Energy Rates</a> & <a href="https://www.atcoelectricyukon.com/content/dam/web/electric-yukon/january-2025-rates/YECL%20YEC%20Rate%20Schedules%2001-2025.pdf" target="_blank">ATCO Rate Schedule</a><br>
+                    Rates: Residential $0.1214-$0.1399/kWh, Business $0.1000-$0.1568/kWh<br>
+                    Market: Regulated - block rate structure, hydroelectric generation</p>
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+    <script>
+        // Updated Canadian electricity price data with ALL 13 provinces and territories
+        const provinceData = [
+            { name: 'Quebec', provider: 'Hydro-Québec', residential: 0.073, commercial: 0.089, industrial: 0.073, market: 'Regulated', notes: 'Lowest in North America' },
+            { name: 'Manitoba', provider: 'Manitoba Hydro', residential: 0.089, commercial: 0.094, industrial: 0.089, market: 'Regulated', notes: 'Primarily hydroelectric' },
+            { name: 'British Columbia', provider: 'BC Hydro', residential: 0.094, commercial: 0.25, industrial: 0.094, market: 'Regulated', notes: 'Two-tier rate system + demand charge' },
+            { name: 'Alberta', provider: 'AESO', residential: 0.089, commercial: 0.094, industrial: 0.089, market: 'Deregulated', notes: 'Competitive market + pool price' },
+            { name: 'Yukon', provider: 'Yukon Energy', residential: 0.1214, commercial: 0.1000, industrial: 0.1214, market: 'Regulated', notes: 'Block rates, hydro + diesel mix' },
+            { name: 'Ontario', provider: 'IESO', residential: 0.128, commercial: 0.134, industrial: 0.128, market: 'Mixed', notes: 'HOEP + Global Adjustment' },
+            { name: 'Newfoundland', provider: 'NL Hydro', residential: 0.134, commercial: 0.139, industrial: 0.134, market: 'Regulated', notes: 'Primarily hydroelectric' },
+            { name: 'Saskatchewan', provider: 'SaskPower', residential: 0.134, commercial: 0.139, industrial: 0.134, market: 'Regulated', notes: 'Coal + renewable mix' },
+            { name: 'New Brunswick', provider: 'NB Power', residential: 0.119, commercial: 0.124, industrial: 0.119, market: 'Regulated', notes: 'Time-of-use available' },
+            { name: 'Nova Scotia', provider: 'Nova Scotia Power', residential: 0.154, commercial: 0.159, industrial: 0.154, market: 'Regulated', notes: 'Renewable options' },
+            { name: 'Prince Edward Island', provider: 'Maritime Electric', residential: 0.164, commercial: 0.169, industrial: 0.164, market: 'Regulated', notes: 'Wind integration' },
+            { name: 'Northwest Territories', provider: 'NT Power', residential: 0.262, commercial: 0.2071, industrial: 0.262, market: 'Regulated', notes: 'Varies by zone, remote location' },
+            { name: 'Nunavut', provider: 'Qulliq Energy', residential: 0.7494, commercial: 0.6208, industrial: 0.7494, market: 'Regulated', notes: '100% diesel generation, highest rates' }
+        ];
+
+        let currentChart = null;
+        let currentRateType = 'residential';
+
+        // Initialize the dashboard
+        document.addEventListener('DOMContentLoaded', function() {
+            populateProvinceTable();
+            createPriceChart('residential');
+        });
+
+        // Populate province table
+        function populateProvinceTable() {
+            const tableBody = document.getElementById('provinceTableBody');
+            tableBody.innerHTML = '';
+
+            provinceData.forEach((province, index) => {
+                const row = document.createElement('tr');
+                
+                // Determine rate class for styling
+                let rateClass = 'rate-mid';
+                if (province.residential < 0.100) rateClass = 'rate-low';
+                else if (province.residential > 0.200) rateClass = 'rate-high';
+
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td><strong>${province.name}</strong></td>
+                    <td>${province.provider}</td>
+                    <td class="${rateClass}">$${province.residential.toFixed(3)}/kWh</td>
+                    <td class="${rateClass}">$${province.commercial.toFixed(3)}/kWh</td>
+                    <td class="${rateClass}">$${province.industrial.toFixed(3)}/kWh</td>
+                    <td>${province.market}</td>
+                    <td>${province.notes}</td>
+                `;
+                
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Create price chart
+        function createPriceChart(rateType) {
+            const ctx = document.getElementById('priceChart').getContext('2d');
+            
+            if (currentChart) {
+                currentChart.destroy();
+            }
+
+            const labels = provinceData.map(p => p.name);
+            const data = provinceData.map(p => p[rateType]);
+
+            currentChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: `${rateType.charAt(0).toUpperCase() + rateType.slice(1)} Rate ($/kWh)`,
+                        data: data,
+                        backgroundColor: data.map(rate => {
+                            if (rate < 0.100) return 'rgba(39, 174, 96, 0.8)'; // Green for low rates
+                            else if (rate > 0.200) return 'rgba(231, 76, 60, 0.8)'; // Red for high rates
+                            else return 'rgba(243, 156, 18, 0.8)'; // Orange for mid rates
+                        }),
+                        borderColor: data.map(rate => {
+                            if (rate < 0.100) return 'rgba(39, 174, 96, 1)';
+                            else if (rate > 0.200) return 'rgba(231, 76, 60, 1)';
+                            else return 'rgba(243, 156, 18, 1)';
+                        }),
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Rate ($/kWh)'
+                            }
+                        },
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Province/Territory'
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return `Rate: $${context.parsed.y.toFixed(4)}/kWh`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Show different rate types
+        function showChart(rateType) {
+            currentRateType = rateType;
+            
+            // Update button states
+            document.querySelectorAll('.control-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Update chart
+            createPriceChart(rateType);
+        }
+    </script>
+</body>
+</html>
